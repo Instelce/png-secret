@@ -4,7 +4,7 @@ use std::{fmt::Display, str::FromStr};
 
 use crate::Error;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ChunkType {
     ancillary: u8,
     private: u8,
@@ -39,25 +39,19 @@ impl ChunkType {
     }
 
     pub fn is_critical(&self) -> bool {
-        let bin = format!("{:b}", self.ancillary);
-        println!("{}, {}", bin.chars().nth(6).unwrap(), bin);
-        bin.chars().nth(6) == Some('0')
+        self.ancillary.is_ascii_uppercase()
     }
 
     pub fn is_public(&self) -> bool {
-        let bin = format!("{:b}", self.private);
-        bin.chars().nth(6) == Some('0')
+        self.private.is_ascii_uppercase()
     }
 
     pub fn is_reserved_bit_valid(&self) -> bool {
-        let bin = format!("{:b}", self.reserved);
-        println!("{}, {}", bin.chars().nth(6).unwrap(), bin);
-        bin.chars().nth(6) == Some('0')
+        self.reserved.is_ascii_uppercase()
     }
 
     pub fn is_safe_to_copy(&self) -> bool {
-        let bin = format!("{:b}", self.safe_to_copy);
-        bin.chars().nth(6) == Some('1')
+        self.safe_to_copy.is_ascii_lowercase()
     }
 }
 
@@ -82,7 +76,11 @@ impl FromStr for ChunkType {
         if s.len() == 4 {
             let mut res: Vec<u8> = Vec::new();
             for char in s.chars() {
-                res.push(char as u8);
+                if char.is_ascii_alphabetic() {
+                    res.push(char as u8);
+                } else {
+                    return Err("Can't be a number".into());
+                }
             }
             Ok(ChunkType {
                 ancillary: res[0],
@@ -184,6 +182,7 @@ mod tests {
     #[test]
     pub fn test_invalid_chunk_is_valid() {
         let chunk = ChunkType::from_str("Rust").unwrap();
+        println!("{}", chunk.is_valid());
         assert!(!chunk.is_valid());
 
         let chunk = ChunkType::from_str("Ru1t");
