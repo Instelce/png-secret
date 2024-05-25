@@ -36,15 +36,18 @@ impl Chunk {
     }
 
     pub fn crc(&self) -> u32 {
-        const algo: Crc<u32> = Crc::<u32>::new(&crc::CRC_32_ISO_HDLC);
+        const ALGO: Crc<u32> = Crc::<u32>::new(&crc::CRC_32_ISO_HDLC);
         let mut bytes: Vec<u8> = Vec::new();
         bytes.extend(self.chunk_type.bytes().iter());
         bytes.extend(self.data.iter());
-        algo.checksum(bytes.as_ref())
+        ALGO.checksum(bytes.as_ref())
     }
 
     pub fn data_as_string(&self) -> Result<String> {
-        Ok(String::from_utf8(self.data.clone())?)
+        match String::from_utf8(self.data.clone()) {
+            Ok(string) => Ok(string),
+            Err(e) => Err(e.to_string().into())
+        }
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {
@@ -88,11 +91,11 @@ impl TryFrom<&[u8]> for Chunk {
         let crc = u32::from_be_bytes(crc_data);
 
         // check CRC
-        const algo: Crc<u32> = Crc::<u32>::new(&crc::CRC_32_ISO_HDLC);
+        const ALGO: Crc<u32> = Crc::<u32>::new(&crc::CRC_32_ISO_HDLC);
         let mut bytes = Vec::new();
         bytes.extend(chunk_type_data.iter());
         bytes.extend(data.iter());
-        if algo.checksum(bytes.as_ref()) != crc {
+        if ALGO.checksum(bytes.as_ref()) != crc {
             return Err("CRC not valid".into());
         }
 
